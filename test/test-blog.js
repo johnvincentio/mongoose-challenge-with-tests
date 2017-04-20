@@ -1,24 +1,65 @@
 /* jshint node: true */
 /* jshint esnext: true */
 
-/* global describe, it, before, after */
+/* global describe, it, before, after, beforeEach, afterEach */
 
 'use strict';
 
 const chai = require('chai');
 const chaiHttp = require('chai-http');
+const faker = require('faker');
+const mongoose = require('mongoose');
 
 const {app, runServer, closeServer} = require('../server');
+const {TEST_DATABASE_URL} = require('../config');
+
+const {BlogModel} = require('../models');
 
 /* jshint -W098 */
 const should = chai.should();
 
 chai.use(chaiHttp);
 
+function generateData() {
+    return {
+        title: faker.lorem.words(),
+        content: faker.lorem.sentence(),
+        author: {
+            firstName: faker.name.firstName(),
+            lastName: faker.name.lastName()
+        },
+        created: faker.date.past()
+    };
+}
+
+function seedData() {
+    console.info('seeding blog data');
+    const data = [];
+
+    for (let i=1; i<=10; i++) {
+        data.push(generateData());
+    }
+    // this will return a promise
+    return BlogModel.insertMany(data);
+}
+
+function tearDownDb() {
+    console.warn('Deleting database');
+    return mongoose.connection.dropDatabase();
+}
+
 describe('Blogs', function() {
 
     before(function() {
-        return runServer();
+        return runServer(TEST_DATABASE_URL);
+    });
+
+    beforeEach(function() {
+        return seedData();
+    });
+
+    afterEach(function() {
+        return tearDownDb();
     });
 
     after(function() {
