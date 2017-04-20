@@ -244,17 +244,44 @@ Strategy:
     });
 
     describe('DELETE endpoint', function() {
-        it('should delete the first blog on DELETE', function() {
-            return chai.request(app)
-                .get('/blog')
-                .then(function(res) {
-                    res.should.have.status(200);
-                    return chai.request(app)
-                        .delete('/blog/'+res.body[0].id);
+/*
+Strategy:
+1. Get one record
+2. make a delete request for that record's id
+3. assert that response has correct status code
+4. get the record by id
+5. prove that record does not exist
+*/
+        it('should delete by id', function() {
+            let item;
+            return BlogModel        // 1
+                .findOne()
+                .exec()
+                .then(function(blog) {
+                    item = blog;
+                    return chai.request(app).delete(`/blog/${blog.id}`);   // 2
                 })
                 .then(function(res) {
-                    res.should.have.status(204);
+                    res.should.have.status(204);        // 3
+                    return BlogModel.findById(item.id).exec();      // 4
+                })
+                .then(function(_blog) {      // 5
+                    should.not.exist(_blog);
                 });
+        });
+
+/*
+Strategy:
+1. Create a non-existent Id
+2. make a delete request for that id
+3. assert that response has correct status code
+*/
+        it('delete blog by non-existent id', function() {
+            let myid = mongoose.Types.ObjectId();       // 1
+            return chai.request(app).delete(`/blog/${myid}`)       // 2
+            .then(res => {
+                res.should.have.status(204);        // 3
+            });
         });
     });
 });
