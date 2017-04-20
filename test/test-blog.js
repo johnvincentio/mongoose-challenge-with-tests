@@ -214,6 +214,9 @@ describe('Blogs API resources', function() {
                     blog.created.toJSON().should.equal(created); // json formatted ISO date
                 });
         });
+    });
+
+    describe('POST endpoint error conditions', function() {
 
 /*
 strategy:
