@@ -198,35 +198,48 @@ describe('Blogs API resources', function() {
     });
 
     describe('PUT endpoint', function() {
-        it('should update a blog on PUT', function() {
-            const updateItem = {
-                title: 'title-99',
-                content: 'content-99',
-                author: {firstName: 'first', lastName: 'last'}
-            };
-            return chai.request(app)
-                .get('/blog')
-                .then(function(res) {
-                    res.should.have.status(200);
-                    updateItem.id = res.body[0].id;
-                    updateItem.created = res.body[0].created;
+/*
+Strategy:
+1. Get an existing blog
+2. Put request to update the data.
+3. Prove blog data returned by request is the same data used in the update.
+4. Get record from database by id
+5. Prove blog data in database is the same data used in the update.
+*/
+        it('should update fields you send over', function() {
+            const updateData = generateData();
+
+            return BlogModel        // 1
+                .findOne()
+                .exec()
+                .then(function(blog) {
+                    updateData.id = blog.id;
+                    updateData.created = blog.created;
                     return chai.request(app)
-                        .put('/blog/' + updateItem.id)
-                        .send(updateItem);
-                })
-                .then(function(res) {
-                    res.should.have.status(201);
-                /* jshint -W030 */
-                    res.should.be.json;
-                    res.body.should.be.a('object');
-                    res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
-                    res.body.id.should.not.be.null;
-                    res.body.id.should.equal(updateItem.id);
-                    res.body.title.should.equal(updateItem.title);
-                    res.body.content.should.equal(updateItem.content);
-                    res.body.author.should.equal(updateItem.author.firstName + ' ' + updateItem.author.lastName);
-                    res.body.created.should.equal(updateItem.created);
-                });
+                        .put(`/blog/${updateData.id}`)      // 2
+                        .send(updateData);
+            })
+            .then(function(res) {
+                res.should.have.status(201);
+            /* jshint -W030 */
+                res.should.be.json;
+                res.body.should.be.a('object');
+                res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
+                res.body.id.should.equal(updateData.id);          // 3
+                res.body.title.should.equal(updateData.title);
+                res.body.content.should.equal(updateData.content);
+                res.body.author.should.equal(`${updateData.author.firstName} ${updateData.author.lastName}`);
+                res.body.created.should.equal(updateData.created.toJSON());
+                return BlogModel.findById(updateData.id).exec();      // 4
+            })
+            .then(function(blog) {      // 5
+                blog.id.should.equal(updateData.id);
+                blog.title.should.equal(updateData.title);
+                blog.content.should.equal(updateData.content);
+                blog.author.firstName.should.equal(updateData.author.firstName);
+                blog.author.lastName.should.equal(updateData.author.lastName);
+                blog.created.toJSON().should.equal(updateData.created.toJSON());
+            });
         });
     });
 
