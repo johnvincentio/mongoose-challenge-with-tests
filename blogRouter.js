@@ -29,7 +29,14 @@ router.get('/:id', (req, res) => {
     BlogModel
         .findById(req.params.id)
         .exec()
-        .then(blog => res.json(blog.getAll()))
+        .then(blog => {
+            if (blog) {
+                res.json(blog.getAll());
+            }
+            else {
+                res.status(204).json({message: `Record ${req.params.id} not found`});
+            }
+        })
         .catch(err => {
             console.error(err);
             res.status(500).json({message: 'Internal Server error'});

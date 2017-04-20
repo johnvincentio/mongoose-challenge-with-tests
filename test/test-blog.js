@@ -141,21 +141,34 @@ describe('Blogs API resources', function() {
                     item = blog;
                     return chai.request(app)
                         .get('/blog/'+item.id);     // 2
-            })
-            .then(function(res) {
-                res.should.have.status(200);        // 3
-                res.body.should.be.a('object');
-                res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
-                res.body.id.should.equal(item.id);          // 4
-                res.body.title.should.equal(item.title);
-                res.body.content.should.equal(item.content);
-                res.body.author.should.equal(`${item.author.firstName} ${item.author.lastName}`);
-                res.body.created.should.equal(item.created.toJSON()); // json formatted ISO date
-            });
+                })
+                .then(function(res) {
+                    res.should.have.status(200);        // 3
+                    res.body.should.be.a('object');
+                    res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
+                    res.body.id.should.equal(item.id);          // 4
+                    res.body.title.should.equal(item.title);
+                    res.body.content.should.equal(item.content);
+                    res.body.author.should.equal(`${item.author.firstName} ${item.author.lastName}`);
+                    res.body.created.should.equal(item.created.toJSON()); // json formatted ISO date
+                });
+        });
+
+/*
+ strategy:
+    1. Create a non-existent Id
+    2. get that record by id
+    3. verify status
+*/
+        it('should fail to get record by a bad id', function() {
+            let myid = mongoose.Types.ObjectId();       // 1
+            return chai.request(app)
+                .get(`/blog/${myid}`)     // 2
+                .then(function(res) {
+                    res.should.have.status(204);        // 3
+                });
         });
     });
-
-//TODO; get by bad id...
 
     describe('POST endpoint', function() {
 /*
