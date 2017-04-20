@@ -155,27 +155,45 @@ describe('Blogs API resources', function() {
         });
     });
 
-
+//TODO; get by bad id...
 
     describe('POST endpoint', function() {
-        it('should add a blog on POST', function() {
-            const newItem = {
-                title: 'title-99', content: 'content-99', author: {firstName: 'Donald', lastName: 'Duck'}
-            };
+/*
+ strategy:
+    1. make a new record
+    2. post the record
+    3. prove res has right status, data type
+    4. verify fields have correct values
+    5. get the record by id
+    6. verify record is identical to the new record.
+*/
+        it('should add a new blog', function() {
+            let created;
+            const item = generateData();     // 1
+
             return chai.request(app)
-                .post('/blog')
-                .send(newItem)
+                .post('/blog')              // 2
+                .send(item)
                 .then(function(res) {
-                    res.should.have.status(201);
+                    res.should.have.status(201);        // 3
                 /* jshint -W030 */
                     res.should.be.json;
                     res.body.should.be.a('object');
                     res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
                     res.body.id.should.not.be.null;
-                    res.body.title.should.equal(newItem.title);
-                    res.body.content.should.equal(newItem.content);
-                    res.body.author.should.equal(newItem.author.firstName + ' ' + newItem.author.lastName);
-            });
+                    res.body.title.should.equal(item.title);     // 4
+                    res.body.content.should.equal(item.content);
+                    res.body.author.should.equal(`${item.author.firstName} ${item.author.lastName}`);
+                    created = res.body.created;
+                    return BlogModel.findById(res.body.id).exec();      // 5
+                })
+                .then(function(blog) {      // 6
+                    blog.title.should.equal(item.title);
+                    blog.content.should.equal(item.content);
+                    blog.author.firstName.should.equal(item.author.firstName);
+                    blog.author.lastName.should.equal(item.author.lastName);
+                    blog.created.toJSON().should.equal(created); // json formatted ISO date
+                });
         });
     });
 
