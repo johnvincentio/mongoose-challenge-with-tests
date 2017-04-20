@@ -45,10 +45,10 @@ function seedData() {
 
 function tearDownDb() {
     console.warn('Deleting database');
-    return mongoose.connection.dropDatabase();
+    return mongoose.connection.dropDatabase();      // TODO; check this against old...
 }
 
-describe('Blogs', function() {
+describe('Blogs API resources', function() {
 
     before(function() {
         return runServer(TEST_DATABASE_URL);
@@ -66,117 +66,164 @@ describe('Blogs', function() {
         return closeServer();
     });
 
-    it('should list blogs on GET', function() {
-        // for Mocha tests, when we're dealing with asynchronous operations,
-        // we must either return a Promise object or else call a `done` callback
-        // at the end of the test. The `chai.request(server).get...` call is asynchronous
-        // and returns a Promise, so we just return it.
-        return chai.request(app)
-            .get('/blog')
-            .then(function(res) {
-                res.should.have.status(200);
-/* jshint -W030 */
-                res.should.be.json;
-                res.body.should.be.a('array');
-                // because we create 3 items on app load
-                res.body.length.should.be.at.least(1);
-                const expectedKeys = ['id', 'title', 'content', 'author', 'created'];
-                res.body.forEach(function(item) {
-                    item.should.be.a('object');
-                    item.should.include.keys(expectedKeys);
+    describe('GET endpoint', function() {
+/*
+ strategy:
+    1. get back all blogs returned by by GET request to `/blog`
+    2. prove res has right status, data type
+    3. prove the number of blogs we got back is equal to number in db.
+*/
+        let res;
+        it('should return all blogs', function() {
+            return chai.request(app)
+                .get('/blog')               // 1
+                .then(function(_res) {
+                    res = _res;
+                    res.should.have.status(200);    // 2
+                    res.body.length.should.be.at.least(1);
+                    return BlogModel.count();
+                })
+                .then(function(count) {     // 3
+                    res.body.should.have.length.of(count);
                 });
-            });
-    });
+        });
 
-    it('should get the first blog on a GET by id', function() {
-        return chai.request(app)
-            .get('/blog')
-            .then(function(res) {
-                res.should.have.status(200);
-                const firstItem = {
-                    id: res.body[0].id,
-                    title: res.body[0].title,
-                    content: res.body[0].content,
-                    author: res.body[0].author,
-                    created: res.body[0].created
-                };
-                return chai.request(app)
-                    .get('/blog/'+firstItem.id)
-                    .then(function(res) {
-                        res.should.have.status(200);
-                        res.body.should.be.a('object');
-                        res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
+/*
+ strategy:
+    1. get back all blogs returned by by GET request to `/blog`
+    2. prove res has right status, data type
+    3. get first document from the database
+    4. verify fields have correct values
+*/
+       it('should return blogs with right fields', function() {
+           let item;
+            return chai.request(app)
+                .get('/blog')               // 1
+                .then(function(res) {
+                    res.should.have.status(200);    // 2
+    /* jshint -W030 */
+                    res.should.be.json;
+                    res.body.should.be.a('array');
+                    res.body.length.should.be.at.least(1);
 
-                        res.body.id.should.equal(firstItem.id);
-                        res.body.title.should.equal(firstItem.title);
-                        res.body.content.should.equal(firstItem.content);
-                        res.body.author.should.equal(firstItem.author);
-                        res.body.created.should.equal(firstItem.created);
+                    const expectedKeys = ['id', 'title', 'content', 'author', 'created'];
+                    res.body.forEach(function(item) {
+                        item.should.be.a('object');
+                        item.should.include.keys(expectedKeys);
+                    });
+                    item = res.body[0];     // first record
+                    return BlogModel.findById(item.id).exec();      // 3
+                })
+                .then(function(blog) {      // 4
+                    blog.id.should.equal(item.id);
+                    blog.title.should.equal(item.title);
+                    blog.content.should.equal(item.content);
+                    item.author.should.equal(`${blog.author.firstName} ${blog.author.lastName}`);
+                    blog.created.toJSON().should.equal(item.created); // json formatted ISO date
                 });
-            });
-    });
-
-    it('should add a blog on POST', function() {
-        const newItem = {
-            title: 'title-99', content: 'content-99', author: {firstName: 'Donald', lastName: 'Duck'}
-        };
-        return chai.request(app)
-            .post('/blog')
-            .send(newItem)
-            .then(function(res) {
-                res.should.have.status(201);
-            /* jshint -W030 */
-                res.should.be.json;
-                res.body.should.be.a('object');
-                res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
-                res.body.id.should.not.be.null;
-                res.body.title.should.equal(newItem.title);
-                res.body.content.should.equal(newItem.content);
-                res.body.author.should.equal(newItem.author.firstName + ' ' + newItem.author.lastName);
         });
     });
 
-    it('should update a blog on PUT', function() {
-        const updateItem = {
-            title: 'title-99',
-            content: 'content-99',
-            author: {firstName: 'first', lastName: 'last'}
-        };
-        return chai.request(app)
-            .get('/blog')
-            .then(function(res) {
-                res.should.have.status(200);
-                updateItem.id = res.body[0].id;
-                updateItem.created = res.body[0].created;
-                return chai.request(app)
-                    .put('/blog/' + updateItem.id)
-                    .send(updateItem);
+    describe('GET by ID endpoint', function() {
+/*
+ strategy:
+    1. find one record
+    2. get that record by id
+    3. prove res has right status, data type
+    4. verify fields have correct values
+*/
+        it('should get one blog by id', function() {
+            let item;
+            return BlogModel        // 1
+                .findOne()
+                .exec()
+                .then(function(blog) {
+                    item = blog;
+                    return chai.request(app)
+                        .get('/blog/'+item.id);     // 2
             })
             .then(function(res) {
-                res.should.have.status(201);
-            /* jshint -W030 */
-                res.should.be.json;
+                res.should.have.status(200);        // 3
                 res.body.should.be.a('object');
                 res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
-                res.body.id.should.not.be.null;
-                res.body.id.should.equal(updateItem.id);
-                res.body.title.should.equal(updateItem.title);
-                res.body.content.should.equal(updateItem.content);
-                res.body.author.should.equal(updateItem.author.firstName + ' ' + updateItem.author.lastName);
-                res.body.created.should.equal(updateItem.created);
+                res.body.id.should.equal(item.id);          // 4
+                res.body.title.should.equal(item.title);
+                res.body.content.should.equal(item.content);
+                res.body.author.should.equal(`${item.author.firstName} ${item.author.lastName}`);
+                res.body.created.should.equal(item.created.toJSON()); // json formatted ISO date
             });
+        });
     });
 
-    it('should delete the first blog on DELETE', function() {
-        return chai.request(app)
-            .get('/blog')
-            .then(function(res) {
-                res.should.have.status(200);
-                return chai.request(app)
-                    .delete('/blog/'+res.body[0].id);
-            })
-            .then(function(res) {
-                res.should.have.status(204);
+
+
+    describe('POST endpoint', function() {
+        it('should add a blog on POST', function() {
+            const newItem = {
+                title: 'title-99', content: 'content-99', author: {firstName: 'Donald', lastName: 'Duck'}
+            };
+            return chai.request(app)
+                .post('/blog')
+                .send(newItem)
+                .then(function(res) {
+                    res.should.have.status(201);
+                /* jshint -W030 */
+                    res.should.be.json;
+                    res.body.should.be.a('object');
+                    res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
+                    res.body.id.should.not.be.null;
+                    res.body.title.should.equal(newItem.title);
+                    res.body.content.should.equal(newItem.content);
+                    res.body.author.should.equal(newItem.author.firstName + ' ' + newItem.author.lastName);
             });
+        });
+    });
+
+    describe('PUT endpoint', function() {
+        it('should update a blog on PUT', function() {
+            const updateItem = {
+                title: 'title-99',
+                content: 'content-99',
+                author: {firstName: 'first', lastName: 'last'}
+            };
+            return chai.request(app)
+                .get('/blog')
+                .then(function(res) {
+                    res.should.have.status(200);
+                    updateItem.id = res.body[0].id;
+                    updateItem.created = res.body[0].created;
+                    return chai.request(app)
+                        .put('/blog/' + updateItem.id)
+                        .send(updateItem);
+                })
+                .then(function(res) {
+                    res.should.have.status(201);
+                /* jshint -W030 */
+                    res.should.be.json;
+                    res.body.should.be.a('object');
+                    res.body.should.include.keys('id', 'title', 'content', 'author', 'created');
+                    res.body.id.should.not.be.null;
+                    res.body.id.should.equal(updateItem.id);
+                    res.body.title.should.equal(updateItem.title);
+                    res.body.content.should.equal(updateItem.content);
+                    res.body.author.should.equal(updateItem.author.firstName + ' ' + updateItem.author.lastName);
+                    res.body.created.should.equal(updateItem.created);
+                });
+        });
+    });
+
+    describe('DELETE endpoint', function() {
+        it('should delete the first blog on DELETE', function() {
+            return chai.request(app)
+                .get('/blog')
+                .then(function(res) {
+                    res.should.have.status(200);
+                    return chai.request(app)
+                        .delete('/blog/'+res.body[0].id);
+                })
+                .then(function(res) {
+                    res.should.have.status(204);
+                });
+        });
     });
 });
