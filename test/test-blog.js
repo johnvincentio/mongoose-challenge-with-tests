@@ -45,7 +45,13 @@ function seedData() {
 
 function tearDownDb() {
     console.warn('Deleting database');
-    return mongoose.connection.dropDatabase();      // TODO; check this against old...
+    return new Promise((resolve, reject) => {
+        console.warn('Deleting database');
+        mongoose.connection.dropDatabase()
+        .then(result => resolve(result))
+        .catch(err => reject(err));
+    });
+//    return mongoose.connection.dropDatabase();
 }
 
 describe('Blogs API resources', function() {
@@ -77,9 +83,9 @@ describe('Blogs API resources', function() {
         it('should return all blogs', function() {
             return chai.request(app)
                 .get('/blog')               // 1
-                .then(function(_res) {
+                .then(function(_res) {      // 2
                     res = _res;
-                    res.should.have.status(200);    // 2
+                    res.should.have.status(200);
                     res.body.length.should.be.at.least(1);
                     return BlogModel.count();
                 })
@@ -95,7 +101,7 @@ describe('Blogs API resources', function() {
     3. get first document from the database
     4. verify fields have correct values
 */
-       it('should return blogs with right fields', function() {
+       it('should return fields with correct values', function() {
            let item;
             return chai.request(app)
                 .get('/blog')               // 1
@@ -173,7 +179,7 @@ describe('Blogs API resources', function() {
     describe('POST endpoint', function() {
 /*
  strategy:
-    1. make a new record
+    1. create a new record
     2. post the record
     3. prove res has right status, data type
     4. verify fields have correct values
@@ -207,6 +213,86 @@ describe('Blogs API resources', function() {
                     blog.author.lastName.should.equal(item.author.lastName);
                     blog.created.toJSON().should.equal(created); // json formatted ISO date
                 });
+        });
+
+/*
+strategy:
+1. create a new record missing title field
+2. make a POST request with that record
+3. ensure status code = 400
+*/
+        it('should fail to add a new blog - missing title', function() {
+            const newBlog = generateData();
+            delete newBlog.title;
+            chai.request(app)
+                .post('/blog')
+                .send(newBlog)
+            .then(() => {
+                throw Error('should have failed with a 400');
+            })
+            .catch(e => {
+                e.status.should.equal(400);
+            });
+        });
+
+        /*
+strategy:
+1. create a new record missing content field
+2. make a POST request with that record
+3. ensure status code = 400
+*/
+        it('should fail to add a new blog - missing content', function() {
+            const newBlog = generateData();
+            delete newBlog.content;
+            chai.request(app)
+                .post('/blog')
+                .send(newBlog)
+            .then(() => {
+                throw Error('should have failed with a 400');
+            })
+            .catch(e => {
+                e.status.should.equal(400);
+            });
+        });
+
+/*
+strategy:
+1. create a new record missing firstName field
+2. make a POST request with that record
+3. ensure status code = 400
+*/
+        it('should fail to add a new blog - missing firstName', function() {
+            const newBlog = generateData();
+            delete newBlog.author.firstName;
+            chai.request(app)
+                .post('/blog')
+                .send(newBlog)
+            .then(() => {
+                throw Error('should have failed with a 400');
+            })
+            .catch(e => {
+                e.status.should.equal(400);
+            });
+        });
+
+/*
+strategy:
+1. create a new record missing lastName field
+2. make a POST request with that record
+3. ensure status code = 400
+*/
+        it('should fail to add a new blog - missing lastName', function() {
+            const newBlog = generateData();
+            delete newBlog.author.lastName;
+            chai.request(app)
+                .post('/blog')
+                .send(newBlog)
+            .then(() => {
+                throw Error('should have failed with a 400');
+            })
+            .catch(e => {
+                e.status.should.equal(400);
+            });
         });
     });
 
