@@ -1,0 +1,36 @@
+{
+  "name": "mongoose-challenge-with-tests",
+  "version": "1.0.0",
+  "description": "[See notes](https://johnvincent.io/blog/mongoose-blog-app/)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "mocha ./test"
+  },
+  "directories": {
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/johnvincentio/mongoose-challenge-with-tests.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/johnvincentio/mongoose-challenge-with-tests/issues"
+  },
+  "homepage": "https://github.com/johnvincentio/mongoose-challenge-with-tests#readme",
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "chai-http": "^3.0.0",
+    "faker": "^4.1.0",
+    "mocha": "^3.2.0"
+  },
+  "dependencies": {
+    "body-parser": "^1.17.1",
+    "express": "^4.15.2",
+    "mongoose": "^4.9.5",
+    "morgan": "^1.8.1",
+    "uuid": "^3.0.1"
+  }
+}
