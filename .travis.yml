@@ -1,0 +1,9 @@
+language: node_js
+node_js: node
+deploy:
+  provider: heroku
+  api_key:
+    secure: RGiLKmMYLV2/FxY8RWqZ3ObLwWuMFhujigWnvwKvcK1Ys8tsGcZAcch0kTyVOI9KH9hMzQiOH7lrYWOHDGcCAMAeI1Tkt7xQV/e0jTdPzJkozrY6HgOweCRJIs96C6FhKHEgc/ssVc7Nlm5h/NBVn8rYegbrjbWyBGgI71tjmSuuY6WNN7Lq/+T7sh6w0HQgkrzYS87Xi7pW4ISgwW/CpFSpKAITccks/QfUBXiADDEMet0UnA2VonyyRfFDNNDCqoWS8D48tJJdBJS4kMbNZWZAwL3bMwRPOeiw68a00qN+SMp4zHtXwyc3devPcR035dO5uAKme/DdBN++FDzFEzXiEHEBfB11vHyHj/db8GXxIP4Ft23ZOLJCXDBJl+IF76SBqrxpy9/FcxE/dpsHDINz7RjVX2rw8EnaqC6LePxCY2VSon0VRvFuADsXjCaAp5ayn7PE1yxj7ldv6Wtbzq+uf+jbFoINGP2oEjX95XLsKpv6PJ93KztyvffvYysRcd8TRSl+M0y5zDL9qBVq2jbWy1cna/0nIJB5xj8uhgj52GOu4hP7Z5PW+LvIP0PClMARzZynkILqaC9q64QA+kNwtar6c2nAntq6T60kmRNWneY9wjKNVnfVMnMFRYw1BNOLyodXJyj42e/dtf9AQjFYih9HkfBisK+ReoJhP4w=
+  app: blooming-river-17701
+  on:
+    repo: johnvincentio/blogging-challenge
